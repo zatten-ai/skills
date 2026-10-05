@@ -1,0 +1,15 @@
+{
+  "name": "zatten",
+  "description": "Skills para configurar projetos da Zatten por IA.",
+  "owner": {
+    "name": "Zatten",
+    "url": "https://zatten.com"
+  },
+  "plugins": [
+    {
+      "name": "zatten",
+      "description": "Ler e alterar um projeto da Zatten — funil, tags, automações e o agente de IA — pelas ferramentas do MCP",
+      "source": "./"
+    }
+  ]
+}
