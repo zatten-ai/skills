@@ -12,14 +12,14 @@ alterar esse JSON com segurança.
 **Claude Code**
 
 ```
-claude plugin marketplace add feliperaitano123/skills
+claude plugin marketplace add zatten-ai/skills
 claude plugin install zatten@zatten
 ```
 
 **Outros agentes** (Codex, Cursor, Gemini CLI…)
 
 ```
-npx skills add feliperaitano123/skills --skill zatten
+npx skills add zatten-ai/skills --skill zatten
 ```
 
 Use apenas um dos métodos.

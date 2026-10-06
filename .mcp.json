@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "supabase-zatten": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=dbpsawnjvamvlxrjkivo&read_only=true&features=docs%2Cdatabase%2Cdevelopment"
+    },
+    "zatten_supabase_read": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=dbpsawnjvamvlxrjkivo&read_only=true&features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching"
+    }
+  }
+}
