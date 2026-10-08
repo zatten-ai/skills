@@ -29,7 +29,8 @@ que faltar, até 3 perguntas por vez:
 - como trata os clientes (tom, prazos, o que entrega todo mês).
 
 Grave no `AGENCIA.md` (modelo em `zatten-ops/references/modelos.md`). Mostre o
-resultado e pergunte se está certo. É a referência do SDR, das propostas e das
+resultado e pergunte se está certo. Para uma conversa mais longa (agência grande,
+mudança de estratégia, nicho novo), ofereça a `zatten-grill`. É a referência do SDR, das propostas e das
 chamadas comerciais. Se a pessoa quiser pular, pule e volte a isso depois.
 
 ## SDR da agência
