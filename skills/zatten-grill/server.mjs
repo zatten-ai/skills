@@ -23,6 +23,7 @@ import path from "node:path";
 import os from "node:os";
 import tty from "node:tty";
 import { execFileSync } from "node:child_process";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -144,14 +145,34 @@ function cmdServe(o) {
   let seq = lastSeq(events);
   let lastGoodState = null;
   let selfOrigins = [];
+  let selfHosts = [];
+
+  // A CHAVE DESTE SERVIDOR (zatten-grill). O servidor escuta só em 127.0.0.1, mas isso
+  // não basta: um site aberto no navegador pode apontar um domínio dele para 127.0.0.1
+  // (DNS rebinding) e ler o estado ou forjar um envio — e um envio é tratado pelo agente
+  // como fala da pessoa. Toda rota além da página exige esta chave, que só existe na URL
+  // que o próprio agente abre (e em server.json, legível só pelo usuário). Reaproveita a
+  // chave anterior, para uma aba já aberta continuar funcionando depois de reiniciar.
+  let key = "";
+  try { key = String(JSON.parse(fs.readFileSync(serverFile, "utf8")).key || ""); } catch { /* primeira vez */ }
+  if (!/^[0-9a-f]{32}$/.test(key)) key = randomBytes(16).toString("hex");
+  const keyOk = (req, url) => {
+    const given = String(req.headers["x-grill-key"] || url.searchParams.get("k") || "");
+    return given.length === key.length && timingSafeEqual(Buffer.from(given), Buffer.from(key));
+  };
 
   const send = (res, code, body, type) => { res.writeHead(code, { "content-type": type, "cache-control": "no-store" }); res.end(body); };
   const json = (res, code, obj) => send(res, code, JSON.stringify(obj), "application/json");
   const readBody = (req) => new Promise((resolve) => { let b = ""; req.on("data", (c) => { b += c; }); req.on("end", () => resolve(b)); });
 
   const srv = http.createServer(async (req, res) => {
-    const { pathname } = new URL(req.url, "http://x");
+    const url = new URL(req.url, "http://x");
+    const { pathname } = url;
+    // DNS rebinding: o navegador manda o Host do domínio do atacante. Só os nomes deste
+    // servidor passam.
+    if (!selfHosts.includes(String(req.headers.host || ""))) return json(res, 403, { error: "host not allowed" });
     if (req.method === "GET" && pathname === "/") return send(res, 200, fs.readFileSync(page), "text/html; charset=utf-8");
+    if (!keyOk(req, url)) return json(res, 403, { error: "missing or wrong key" });
     if (req.method === "GET" && pathname === "/state") {
       // `patch` swaps state.json in atomically, but a hand-written file can be caught mid-write:
       // then serve the last parse that worked.
@@ -192,9 +213,11 @@ function cmdServe(o) {
   });
   srv.on("listening", () => {
     const { port } = srv.address();
-    const url = `http://127.0.0.1:${port}/`;
+    const url = `http://127.0.0.1:${port}/?k=${key}`;
     selfOrigins = [`http://127.0.0.1:${port}`, `http://localhost:${port}`];
-    writeJson(serverFile, { url, port, pid: process.pid, started: new Date().toISOString() });
+    selfHosts = [`127.0.0.1:${port}`, `localhost:${port}`];
+    writeJson(serverFile, { url, port, key, pid: process.pid, started: new Date().toISOString() });
+    try { fs.chmodSync(serverFile, 0o600); } catch { /* sistemas sem chmod */ }
     print({ type: "ready", url, session });
   });
   srv.listen(attempt, "127.0.0.1");

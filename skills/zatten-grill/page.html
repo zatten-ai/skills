@@ -244,6 +244,8 @@
 <script>
 "use strict";
 const $ = (id) => document.getElementById(id);
+// A chave do servidor vem na URL que o agente abriu; toda chamada a manda de volta.
+const KEY = new URLSearchParams(location.search).get("k") || "";
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const WORKING_GRACE_MS = 5 * 60 * 1000;
 const DRAW_GRACE_MS = 10 * 60 * 1000; // a background draw older than this is treated as stuck: Regenerate comes back
@@ -280,7 +282,7 @@ const fmtMs = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); return s <
 // ---- polling ----
 async function poll() {
   try {
-    const r = await fetch("/state", { cache: "no-store" });
+    const r = await fetch("/state", { cache: "no-store", headers: { "x-grill-key": KEY } });
     if (!r.ok) throw new Error(String(r.status));
     const text = await r.text();
     lastOk = Date.now();
@@ -360,7 +362,7 @@ function sendState(needStaged = true) {
 }
 async function post(actions) {
   let r, j = {};
-  try { r = await fetch("/send", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ actions }) }); j = await r.json().catch(() => ({})); } catch { r = null; }
+  try { r = await fetch("/send", { method: "POST", headers: { "content-type": "application/json", "x-grill-key": KEY }, body: JSON.stringify({ actions }) }); j = await r.json().catch(() => ({})); } catch { r = null; }
   if (!j.ok) $("send-why").textContent = "Falha no envio: " + (j.error || (r && r.status) || "sem servidor");
   return j.ok ? j : null;
 }
@@ -468,7 +470,7 @@ function renderVisual() {
     return;
   }
   wait.hidden = true; frame.hidden = false;
-  const src = `/visual?v=${encodeURIComponent(v.version)}`;
+  const src = `/visual?v=${encodeURIComponent(v.version)}&k=${encodeURIComponent(KEY)}`;
   if (frame.dataset.v !== String(v.version)) { frame.dataset.v = String(v.version); frame.setAttribute("src", src); } // only a version bump reloads the iframe; a background redraw keeps the current one
   const busy = isVisualizing(); const gate = sendState(false); const lk = locked();
   const regenTitle = gate.disabled ? (gate.why || "o agente está ocupado") : drawStuck() ? DRAW_STUCK_NOTE : "";
@@ -498,7 +500,7 @@ function renderNav() {
   const cur = curRound();
   for (const [r, list] of all) {
     const h = document.createElement("div"); h.className = "round" + (r === cur ? " current" : "");
-    h.innerHTML = `<span>Rodada ${r}${r === cur ? " · atual" : ""}</span><span>${list.length}</span>`; nav.appendChild(h);
+    h.innerHTML = `<span>Rodada ${esc(r)}${r === cur ? " · atual" : ""}</span><span>${list.length}</span>`; nav.appendChild(h);
     for (const q of list) {
       const s = local.staged[q.id];
       const el = document.createElement("div");

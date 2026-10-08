@@ -50,6 +50,10 @@ modo de espera abaixo), faça o mesmo no chat:
 
 ## Mecânica da página
 
+**A URL da página leva uma chave** (`?k=…`): é ela que impede um site aberto no
+navegador de ler o grill ou forjar um envio. Abra a URL só para a pessoa e não a
+copie para outro lugar (documento, commit, mensagem).
+
 O resto desta skill é a mecânica do grill-with-ui, sem mudanças: os comandos do
 `server.mjs`, o `state.json`, os envios e o visual. Siga-a exatamente. As sessões
 ficam em `~/.zatten-grill/`. Os textos que você escreve nas perguntas e respostas
