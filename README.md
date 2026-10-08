@@ -4,10 +4,11 @@ A skill para operar a [Zatten](https://zatten.com) — a plataforma de
 atendimento por WhatsApp com IA — de dentro do seu assistente (Claude Code,
 Codex, Cursor e outros).
 
-Com ela e o MCP da Zatten, o assistente cria projetos, configura funil, tags,
-propriedades, automações e fluxos, monta e testa o agente de IA, investiga
-conversas e diagnostica clientes, sempre com um plano e o seu "sim" antes de
-alterar qualquer coisa. O conhecimento de produto vem de
+Com as skills e o MCP da Zatten, o assistente cria projetos, configura funil,
+tags, propriedades, automações e fluxos, monta e testa o agente de IA, investiga
+conversas e diagnostica clientes — e ajuda a vender: demo, proposta, viabilidade,
+o SDR da própria agência e o relatório mensal. Sempre com um plano e o seu "sim"
+antes de alterar qualquer coisa. O conhecimento de produto vem de
 [docs.zatten.com](https://docs.zatten.com), que a skill consulta a cada tarefa.
 
 ## Instalar
@@ -22,7 +23,7 @@ claude plugin install zatten-os@zatten-os
 **Outros agentes** (Codex, Cursor, Gemini CLI…)
 
 ```
-npx skills add zatten-ai/zatten-os --skill zatten-os
+npx skills add zatten-ai/zatten-os --skill '*' -g
 ```
 
 Use apenas um dos métodos.
@@ -40,7 +41,10 @@ e confirma listando os seus projetos.
 
 | Skill | O que faz |
 |---|---|
-| [`zatten-os`](skills/zatten-os/SKILL.md) | Criar, configurar, testar e operar projetos: funil, tags, propriedades, automações, fluxos e o agente de IA |
+| [`zatten-ops`](skills/zatten-ops/SKILL.md) | Operar: criar, configurar, testar e diagnosticar projetos; o setup da primeira vez |
+| [`zatten-comercial`](skills/zatten-comercial/SKILL.md) | Vender: diagnóstico do cliente, demo, proposta e viabilidade |
+| [`zatten-agencia`](skills/zatten-agencia/SKILL.md) | O negócio da agência: diagnóstico, SDR da agência, rotina e relatório mensal |
+| [`zatten-grill`](skills/zatten-grill/SKILL.md) | Decisões grandes em rodadas de perguntas, numa página com a marca da Zatten |
 
 ## O que estas skills nunca fazem
 
