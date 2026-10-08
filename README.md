@@ -15,14 +15,14 @@ alterar qualquer coisa. O conhecimento de produto vem de
 **Claude Code**
 
 ```
-claude plugin marketplace add zatten-ai/skills
+claude plugin marketplace add zatten-ai/zatten-os
 claude plugin install zatten-os@zatten-os
 ```
 
 **Outros agentes** (Codex, Cursor, Gemini CLI…)
 
 ```
-npx skills add zatten-ai/skills --skill zatten-os
+npx skills add zatten-ai/zatten-os --skill zatten-os
 ```
 
 Use apenas um dos métodos.
