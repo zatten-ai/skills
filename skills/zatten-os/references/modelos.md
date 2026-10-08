@@ -16,7 +16,8 @@ Preencha o que souber; deixe `(perguntar)` no que faltar.
       CLIENTE.md
       MEMORIA.md
       snapshots/       AAAA-MM-DD_HHMM_<assunto>.json (sem chaves)
-      .env             ZATTEN_API_KEY=... (só se for usar a API do dia a dia)
+      .env             ZATTEN_API_KEY=...    (API do dia a dia, se for usar)
+                       LANGSMITH_API_KEY=... (traces do agente, se o LangSmith estiver ligado)
 ```
 
 ## AGENTS.md
@@ -24,10 +25,11 @@ Preencha o que souber; deixe `(perguntar)` no que faltar.
 ```markdown
 # Regras desta agência para o assistente
 
-- Este diretório guarda os clientes da agência que operam na Zatten. Use a skill `zatten`.
+- Este diretório guarda os clientes da agência que operam na Zatten. Use a skill `zatten-os`.
 - Um cliente por vez. Outro cliente só como leitura, citado.
 - Plano e "sim" antes de qualquer alteração (MCP, API ou navegador).
-- Nunca mostre nem grave chaves. Snapshots sem chaves ("<removido>").
+- Nunca mostre nem grave chaves. Snapshots sem chaves ("<removido>"). Chave só no `.env` da pasta do cliente.
+- Testar o agente executa as tools dele: "sim" antes de entrar em modo de teste. Publicar é sempre de uma pessoa.
 - Pelo navegador: nunca apague nada nem mexa na conexão do WhatsApp.
 - Contexto da agência: AGENCIA.md. Contexto de cada cliente: clientes/<cliente>/.
 ```
@@ -57,6 +59,7 @@ Preencha o que souber; deixe `(perguntar)` no que faltar.
 - Público e tom: …
 - Regras do cliente (o que nunca fazer, horários, preços que pode citar): …
 - Conexão do WhatsApp: oficial | coexistência | não oficial
+- Organização (pasta do painel): …
 - Motor do agente: LangChain Agent | motor antigo (migrar)
 ```
 
@@ -68,6 +71,7 @@ Preencha o que souber; deixe `(perguntar)` no que faltar.
 ## Vigente
 (o que vale hoje; reescreva quando mudar)
 - revision conhecida: <revision do último get_template>
+- Versão do agente: publicada <N>, mais nova <M>
 - Último snapshot: snapshots/<arquivo>.json
 - Decisões em vigor: …
 - Pendências no painel: …
@@ -78,6 +82,7 @@ Preencha o que souber; deixe `(perguntar)` no que faltar.
 ### AAAA-MM-DD HH:MM — <assunto>
 - Pedido: …
 - Feito: …
+- Testado: … (casos, versão)
 - Não feito (e por quê): …
 - Para fazer no painel: …
 - Snapshot: snapshots/<arquivo>.json

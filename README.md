@@ -1,11 +1,14 @@
-# Skills da Zatten
+# Zatten-OS
 
-Skills de agente para trabalhar com a [Zatten](https://zatten.com) — a
-plataforma de atendimento por WhatsApp com IA.
+A skill para operar a [Zatten](https://zatten.com) — a plataforma de
+atendimento por WhatsApp com IA — de dentro do seu assistente (Claude Code,
+Codex, Cursor e outros).
 
-Um projeto da Zatten inteiro (funil, tags, propriedades, automações, fluxos e o
-agente de IA) cabe num JSON. Estas skills ensinam o seu assistente a ler e
-alterar esse JSON com segurança.
+Com ela e o MCP da Zatten, o assistente cria projetos, configura funil, tags,
+propriedades, automações e fluxos, monta e testa o agente de IA, investiga
+conversas e diagnostica clientes, sempre com um plano e o seu "sim" antes de
+alterar qualquer coisa. O conhecimento de produto vem de
+[docs.zatten.com](https://docs.zatten.com), que a skill consulta a cada tarefa.
 
 ## Instalar
 
@@ -13,13 +16,13 @@ alterar esse JSON com segurança.
 
 ```
 claude plugin marketplace add zatten-ai/skills
-claude plugin install zatten@zatten
+claude plugin install zatten-os@zatten-os
 ```
 
 **Outros agentes** (Codex, Cursor, Gemini CLI…)
 
 ```
-npx skills add zatten-ai/skills --skill zatten
+npx skills add zatten-ai/skills --skill zatten-os
 ```
 
 Use apenas um dos métodos.
@@ -37,14 +40,15 @@ e confirma listando os seus projetos.
 
 | Skill | O que faz |
 |---|---|
-| [`zatten`](skills/zatten/SKILL.md) | Configurar um projeto: funil, tags, propriedades, automações, fluxos e o agente de IA |
+| [`zatten-os`](skills/zatten-os/SKILL.md) | Criar, configurar, testar e operar projetos: funil, tags, propriedades, automações, fluxos e o agente de IA |
 
 ## O que estas skills nunca fazem
 
 Por desenho, e não por esquecimento:
 
 - **Apagar** qualquer coisa — o que sai do template volta como "órfão", intacto
-- **Publicar** a versão do agente de IA
+- **Publicar** a versão do agente de IA (ela testa a versão nova, mas quem
+  publica é você)
 - **Enviar** template do WhatsApp para revisão da Meta
 
 Os três são decisão de uma pessoa, no painel.

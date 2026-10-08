@@ -1,5 +1,11 @@
 # Skill da Zatten: um dev sênior para agências — design
 
+> **Atualização (08/10/2026):** a skill virou **Zatten-OS** (`zatten-os`, 3.0.0), com o
+> loop de trabalho e as ferramentas novas do MCP (criar projeto, testar o agente,
+> achar contatos, acessos, white label, feedback). O desenho dessa etapa está em
+> `docs/zat-os-design.md`, no repositório do app. Este documento continua valendo
+> para o que não mudou.
+
 A skill pública da Zatten deixa de ser um manual técnico do MCP e passa a ser um
 "dev sênior da Zatten" que a agência carrega no Claude Code, no Codex ou em
 qualquer harness. A skill é **enxuta e estável**: diz o que é a Zatten, o que é o
