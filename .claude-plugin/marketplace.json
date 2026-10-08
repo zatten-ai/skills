@@ -1,15 +1,16 @@
 {
-  "name": "zatten",
-  "description": "Skills para configurar projetos da Zatten por IA.",
+  "name": "zatten-os",
+  "description": "Zatten-OS: operar a Zatten pelo assistente de IA.",
   "owner": {
     "name": "Zatten",
     "url": "https://zatten.com"
   },
   "plugins": [
     {
-      "name": "zatten",
-      "description": "Ler e alterar um projeto da Zatten — funil, tags, automações e o agente de IA — pelas ferramentas do MCP",
-      "source": "./"
+      "name": "zatten-os",
+      "description": "Zatten-OS: operar, vender e tocar a agência na Zatten pelo assistente — projetos, agente de IA, demo, proposta, SDR e relatório mensal",
+      "source": "./",
+      "version": "4.0.0"
     }
   ]
 }
