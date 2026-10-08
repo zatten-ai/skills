@@ -2,7 +2,7 @@
 // a chave do servidor e a origem dos envios. Roda com: node --test test/security.test.mjs
 import assert from "node:assert/strict";
 import { spawn, execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,7 +17,7 @@ const run = (...a) => execFileSync("node", [server, ...a], { env, cwd: home, enc
 const { session } = JSON.parse(run("new", "--topic", "Segurança"));
 const srv = spawn("node", [server, "serve", "--session", session], { env, cwd: home });
 const ready = await new Promise((ok) => srv.stdout.on("data", (d) => { const l = String(d).split("\n").find((x) => x.includes('"ready"')); if (l) ok(JSON.parse(l)); }));
-const url = new URL(ready.url);
+const url = new URL(run("url", "--session", session).trim());
 const key = url.searchParams.get("k");
 const port = url.port;
 
@@ -32,9 +32,26 @@ const call = (path, { method = "GET", host = `127.0.0.1:${port}`, headers = {}, 
 
 test.after(() => srv.kill());
 
-test("a URL que o agente abre traz a chave, e server.json também", () => {
+test("a URL do comando url traz a chave; a linha ready (que vai para logs) não", () => {
   assert.match(key, /^[0-9a-f]{32}$/);
+  assert.ok(!ready.url.includes("k="));
   assert.equal(JSON.parse(readFileSync(join(session, "server.json"), "utf8")).key, key);
+});
+test("server.json e a pasta da sessão só para o usuário", () => {
+  assert.equal(statSync(join(session, "server.json")).mode & 0o777, 0o600);
+  assert.equal(statSync(session).mode & 0o777, 0o700);
+});
+test("chave com caracteres não-ASCII não derruba o servidor", async () => {
+  const quase = "é".repeat(16) + "0".repeat(16); // 32 caracteres, 48 bytes
+  assert.equal((await call("/state", { headers: { "x-grill-key": encodeURIComponent(quase) } })).status, 403);
+  assert.equal((await call(`/state?k=${encodeURIComponent(quase)}`)).status, 403);
+  assert.equal((await call(`/state?k=${key}`)).status, 200, "e continua no ar");
+});
+test("corpo grande demais é recusado", async () => {
+  const body = JSON.stringify({ actions: [{ type: "thread", q: "q1", text: "x".repeat(2 * 1024 * 1024) }] });
+  const r = await call("/send", { method: "POST", headers: { "content-type": "application/json", "x-grill-key": key, origin: `http://127.0.0.1:${port}` }, body });
+  assert.equal(r.status, 413);
+  assert.equal((await call(`/state?k=${key}`)).status, 200, "e continua no ar");
 });
 test("Host de outro domínio é recusado (DNS rebinding)", async () => {
   assert.equal((await call(`/state?k=${key}`, { host: `atacante.com:${port}` })).status, 403);

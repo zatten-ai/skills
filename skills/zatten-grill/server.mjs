@@ -42,10 +42,12 @@ function parseArgs(argv) {
 const print = (obj) => process.stdout.write(JSON.stringify(obj) + "\n");
 const die = (msg, code = 2) => { process.stderr.write(`grill: ${msg}\n`); process.exit(code); };
 // Atomic: a temp file in the same folder, then rename, so a reader never sees half a file.
-function writeJson(file, obj) {
+function writeJson(file, obj, mode) {
   const text = JSON.stringify(obj, null, 2) + "\n";
   const tmp = `${file}.${process.pid}.tmp`;
-  try { fs.writeFileSync(tmp, text); fs.renameSync(tmp, file); } catch (e) { fs.rmSync(tmp, { force: true }); throw e; }
+  // zatten-grill: com `mode`, o arquivo já nasce com a permissão (o server.json guarda a
+  // chave; um chmod depois do rename deixaria uma janela legível por outros usuários).
+  try { fs.writeFileSync(tmp, text, mode ? { mode } : undefined); fs.renameSync(tmp, file); } catch (e) { fs.rmSync(tmp, { force: true }); throw e; }
   return Buffer.byteLength(text);
 }
 function mustSession(o) {
@@ -73,11 +75,13 @@ function cmdNew(o) {
   const project = projectRoot(process.cwd());
   const key = keyOf(project);
   const dir = path.join(HOME, "sessions", key);
-  fs.mkdirSync(dir, { recursive: true });
+  // zatten-grill: só o usuário lê as sessões (a discussão e a chave do servidor moram aqui).
+  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  try { fs.chmodSync(HOME, 0o700); } catch { /* sistemas sem chmod */ }
   const id = stamp();
   let session = path.join(dir, id);
   for (let n = 2; fs.existsSync(session); n++) session = path.join(dir, `${id}-${n}`);
-  fs.mkdirSync(session);
+  fs.mkdirSync(session, { mode: 0o700 });
   const now = new Date().toISOString();
   writeJson(path.join(session, "state.json"), {
     topic: typeof o.topic === "string" ? o.topic : "",
@@ -156,16 +160,31 @@ function cmdServe(o) {
   let key = "";
   try { key = String(JSON.parse(fs.readFileSync(serverFile, "utf8")).key || ""); } catch { /* primeira vez */ }
   if (!/^[0-9a-f]{32}$/.test(key)) key = randomBytes(16).toString("hex");
+  const keyBuf = Buffer.from(key);
   const keyOk = (req, url) => {
-    const given = String(req.headers["x-grill-key"] || url.searchParams.get("k") || "");
-    return given.length === key.length && timingSafeEqual(Buffer.from(given), Buffer.from(key));
+    // Compara BYTES: uma chave com caracteres não-ASCII tem o mesmo tamanho em caracteres
+    // e outro em bytes, e o timingSafeEqual lançaria — derrubando o servidor.
+    const given = Buffer.from(String(req.headers["x-grill-key"] || url.searchParams.get("k") || ""));
+    return given.length === keyBuf.length && timingSafeEqual(given, keyBuf);
   };
 
   const send = (res, code, body, type) => { res.writeHead(code, { "content-type": type, "cache-control": "no-store" }); res.end(body); };
   const json = (res, code, obj) => send(res, code, JSON.stringify(obj), "application/json");
-  const readBody = (req) => new Promise((resolve) => { let b = ""; req.on("data", (c) => { b += c; }); req.on("end", () => resolve(b)); });
+  // zatten-grill: corpo limitado. Um envio de verdade tem poucos KB; sem teto, um corpo
+  // enorme enche a memória do processo.
+  const MAX_BODY = 1024 * 1024;
+  const readBody = (req) => new Promise((resolve) => {
+    let b = ""; let over = false;
+    req.on("data", (c) => { if (over) return; b += c; if (b.length > MAX_BODY) { over = true; b = ""; } });
+    req.on("end", () => resolve(over ? null : b));
+  });
 
-  const srv = http.createServer(async (req, res) => {
+  const srv = http.createServer((req, res) => {
+    // zatten-grill: um erro inesperado responde 500 em vez de derrubar o processo (uma
+    // rejeição não tratada encerra o Node).
+    handle(req, res).catch((e) => { try { json(res, 500, { error: "internal error" }); } catch { /* resposta já enviada */ } process.stderr.write(`grill: ${oneLine(e && e.message)}\n`); });
+  });
+  const handle = async (req, res) => {
     const url = new URL(req.url, "http://x");
     const { pathname } = url;
     // DNS rebinding: o navegador manda o Host do domínio do atacante. Só os nomes deste
@@ -194,7 +213,9 @@ function cmdServe(o) {
       const origin = req.headers.origin;
       if (origin !== undefined && !selfOrigins.includes(origin)) return json(res, 403, { error: "cross-origin request rejected" });
       let parsed;
-      try { parsed = JSON.parse(await readBody(req)); } catch { return json(res, 400, { error: "body must be JSON" }); }
+      const raw = await readBody(req);
+      if (raw === null) return json(res, 413, { error: "body too large" });
+      try { parsed = JSON.parse(raw); } catch { return json(res, 400, { error: "body must be JSON" }); }
       if (!parsed || !Array.isArray(parsed.actions) || parsed.actions.length === 0) return json(res, 400, { error: "actions must be a non-empty array" });
       const line = JSON.stringify({ type: "send", seq: ++seq, at: new Date().toISOString(), session, actions: parsed.actions });
       fs.appendFileSync(events, line + "\n");
@@ -202,7 +223,7 @@ function cmdServe(o) {
       return json(res, 200, { ok: true, seq });
     }
     json(res, 404, { error: "not found" });
-  });
+  };
   // Port choice: an explicit --port wins; otherwise retry last time's port (so an open tab
   // just resumes polling after a restart) and fall back to ephemeral if it is taken.
   const explicit = o.port !== undefined && o.port !== true;
@@ -216,9 +237,10 @@ function cmdServe(o) {
     const url = `http://127.0.0.1:${port}/?k=${key}`;
     selfOrigins = [`http://127.0.0.1:${port}`, `http://localhost:${port}`];
     selfHosts = [`127.0.0.1:${port}`, `localhost:${port}`];
-    writeJson(serverFile, { url, port, key, pid: process.pid, started: new Date().toISOString() });
-    try { fs.chmodSync(serverFile, 0o600); } catch { /* sistemas sem chmod */ }
-    print({ type: "ready", url, session });
+    writeJson(serverFile, { url, port, key, pid: process.pid, started: new Date().toISOString() }, 0o600);
+    // A linha "ready" vai para o log (Monitor, serve.log): ela leva a URL SEM a chave. A URL
+    // completa, para abrir, sai do comando `url`, que a lê do server.json.
+    print({ type: "ready", url: `http://127.0.0.1:${port}/`, session });
   });
   srv.listen(attempt, "127.0.0.1");
   // server.json stays on exit on purpose: it remembers the port for the next serve, and

@@ -30,7 +30,10 @@ function lineReader(stream) {
 async function startServe(session, extra = []) {
   const child = spawn(process.execPath, [SERVER, "serve", "--session", session, ...extra], { env, stdio: ["ignore", "pipe", "inherit"] });
   const out = lineReader(child.stdout);
-  const ready = JSON.parse(await out.nth(1));
+  const readyLine = JSON.parse(await out.nth(1));
+  // zatten-grill: a linha "ready" vem SEM a chave (ela vai para logs); a URL completa,
+  // com a chave, mora no server.json — é o que o comando `url` imprime.
+  const ready = { ...readyLine, url: JSON.parse(readFileSync(join(session, "server.json"), "utf8")).url, printedUrl: readyLine.url };
   const stop = () => new Promise((res) => { if (child.exitCode !== null) return res(); child.on("exit", res); child.kill(); });
   return { child, ready, out, stop };
 }
@@ -71,6 +74,7 @@ test("serve: ready line + server.json, page, state, send appends the same line i
   assert.match(s.ready.url, /^http:\/\/127\.0\.0\.1:\d+\/\?k=[0-9a-f]{32}$/); // zatten-grill: a URL leva a chave
   assert.equal(s.ready.session, session);
   assert.equal(JSON.parse(readFileSync(join(session, "server.json"), "utf8")).url, s.ready.url);
+  assert.ok(!s.ready.printedUrl.includes("k="), "zatten-grill: a linha ready não leva a chave");
 
   const html = await (await fetch(s.ready.url)).text();
   assert.match(html, /<textarea/);
